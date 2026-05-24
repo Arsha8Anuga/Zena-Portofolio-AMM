@@ -305,6 +305,8 @@ p {
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
 }
 
 .horizontal-track::-webkit-scrollbar {
@@ -888,8 +890,65 @@ p {
   }
 }
 
+@media (orientation: landscape) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .app-shell {
+    width: 100vw;
+    height: 100svh;
+    overflow: hidden;
+  }
+
+  .horizontal-track {
+    display: flex;
+    width: 100vw;
+    height: 100svh;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+
+  .slide-section {
+    flex: 0 0 100vw;
+    width: 100vw;
+    min-width: 100vw;
+    height: 100svh;
+    min-height: 100svh;
+    scroll-snap-align: start;
+  }
+
+  .horizontal-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-menu {
+    display: none;
+  }
+
+  .menu-toggle {
+    display: none;
+  }
+
+  .nav-links {
+    display: flex;
+  }
+}
+
 @media (orientation: portrait) {
-   body {
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-height: 100%;
     overflow-x: hidden;
     overflow-y: auto;
   }
@@ -908,9 +967,44 @@ p {
   }
 
   .slide-section {
+    width: 100%;
     min-width: 100%;
     min-height: auto;
     scroll-snap-align: none;
+  }
+
+  .site-header {
+    padding: 0.85rem;
+  }
+
+  .nav-shell {
+    border-radius: 1.25rem;
+    padding: 0.6rem;
+  }
+
+  .brand {
+    max-width: 9rem;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 0.78rem;
+  }
+
+  .nav-links {
+    display: none;
+  }
+
+  .mode-toggle {
+    display: none;
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+  }
+
+  .slide-dots,
+  .planet,
+  .orbit {
+    display: none;
   }
 
   .hero-layout,
@@ -941,73 +1035,44 @@ p {
     margin-inline: auto;
   }
 
+  .hero-actions,
+  .contact-actions {
+    justify-content: center;
+  }
+
+  .hero-profile-card {
+    width: min(100%, 18rem);
+    padding: 1.1rem;
+  }
+
+  .profile-orbit {
+    width: 7.5rem;
+  }
+
+  .profile-name {
+    font-size: 1.05rem;
+  }
+
+  .profile-status {
+    font-size: 0.68rem;
+  }
+
   .skill-grid,
   .project-grid {
     grid-template-columns: 1fr;
   }
-}
 
-@media (orientation: portrait) {
-  .site-header {
-    padding: 0.85rem;
+  .trust-box div {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
   }
 
-  .nav-shell {
-    border-radius: 1.25rem;
-    padding: 0.6rem;
+  .trust-box strong {
+    text-align: left;
   }
 
-  .brand {
-    max-width: 9rem;
-    overflow: hidden;
-    white-space: nowrap;
-    font-size: 0.78rem;
-  }
-
-  .nav-links {
-    display: none;
-  }
-
-  .mode-toggle {
-    display: none;
-  }
-
-  .menu-toggle {
-    display: inline-flex;
-  }
-}
-
-@media (orientation: landscape) {
-  body {
-    overflow: hidden;
-  }
-
-  .horizontal-track {
-    display: flex;
-    width: 100vw;
-    height: 100svh;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-  }
-
-  .slide-section {
-    min-width: 100vw;
-    min-height: 100svh;
-    scroll-snap-align: start;
-  }
-}
-
-@media (orientation: landscape) {
-  .mobile-menu {
-    display: none;
-  }
-
-  .menu-toggle {
-    display: none;
-  }
-
-  .nav-links {
-    display: flex;
+  h1 {
+    letter-spacing: -0.055em;
   }
 }

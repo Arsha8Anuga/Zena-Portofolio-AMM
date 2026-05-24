@@ -1,5 +1,6 @@
 import { AnimatePresence } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
+
 import { BootScreen } from "./components/BootScreen";
 import { ContactSection } from "./components/ContactSection";
 import { HeroSection } from "./components/HeroSection";
@@ -10,26 +11,31 @@ import { Section } from "./components/Section";
 import { SkillsSection } from "./components/SkillsSection";
 import { SlideDots } from "./components/SlideDots";
 import { StarField } from "./components/StarField";
+
 import { navItems } from "./data/portfolio";
 
 export default function App() {
   const trackRef = useRef(null);
+
   const [booting, setBooting] = useState(true);
   const [active, setActive] = useState(0);
   const [visitorMode, setVisitorMode] = useState("recruiter");
 
-  const getIsPortrait = () => {
+  const isPortrait = () => {
     return window.matchMedia("(orientation: portrait)").matches;
   };
 
-  const updateActiveFromPosition = useCallback(() => {
+  const clampIndex = useCallback((index) => {
+    return Math.max(0, Math.min(index, navItems.length - 1));
+  }, []);
+
+  const updateActive = useCallback(() => {
     const track = trackRef.current;
     if (!track) return;
 
-    const isPortrait = getIsPortrait();
-
-    if (isPortrait) {
+    if (isPortrait()) {
       const sections = Array.from(track.children);
+      if (!sections.length) return;
 
       const currentIndex = sections.reduce((closestIndex, section, index) => {
         const rect = section.getBoundingClientRect();
@@ -44,62 +50,47 @@ export default function App() {
       return;
     }
 
-    setActive(Math.round(track.scrollLeft / window.innerWidth));
-  }, []);
+    const currentIndex = Math.round(track.scrollLeft / window.innerWidth);
+    setActive(clampIndex(currentIndex));
+  }, [clampIndex]);
 
-  const scrollToSlide = useCallback((index) => {
-    const track = trackRef.current;
-    if (!track) return;
+  const scrollToSlide = useCallback(
+    (index) => {
+      const track = trackRef.current;
+      if (!track) return;
 
-    const isPortrait = getIsPortrait();
+      const safeIndex = clampIndex(index);
 
-    if (isPortrait) {
-      const section = track.children[index];
+      if (isPortrait()) {
+        const section = track.children[safeIndex];
 
-      section?.scrollIntoView({
+        section?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+
+        setActive(safeIndex);
+        return;
+      }
+
+      track.scrollTo({
+        left: window.innerWidth * safeIndex,
         behavior: "smooth",
-        block: "start",
       });
 
-      return;
-    }
-
-    track.scrollTo({
-      left: window.innerWidth * index,
-      behavior: "smooth",
-    });
-  }, []);
-
-  const handleScroll = () => {
-    updateActiveFromPosition();
-  };
+      setActive(safeIndex);
+    },
+    [clampIndex],
+  );
 
   useEffect(() => {
-    const handleKey = (event) => {
-      if (event.key === "ArrowRight") {
-        scrollToSlide(Math.min(active + 1, navItems.length - 1));
-      }
+    if (booting) return;
 
-      if (event.key === "ArrowLeft") {
-        scrollToSlide(Math.max(active - 1, 0));
-      }
-    };
+    const handleWheel = (event) => {
+      if (isPortrait()) return;
 
-    window.addEventListener("keydown", handleKey);
-
-    return () => {
-      window.removeEventListener("keydown", handleKey);
-    };
-  }, [active, scrollToSlide]);
-
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track || booting) return;
-
-    const handleWheelScroll = (event) => {
-      const isPortrait = getIsPortrait();
-
-      if (isPortrait) return;
+      const track = trackRef.current;
+      if (!track) return;
 
       event.preventDefault();
 
@@ -108,35 +99,74 @@ export default function App() {
           ? event.deltaY
           : event.deltaX;
 
-      track.scrollLeft += delta;
+      track.scrollBy({
+        left: delta,
+        behavior: "auto",
+      });
     };
 
-    track.addEventListener("wheel", handleWheelScroll, {
+    window.addEventListener("wheel", handleWheel, {
       passive: false,
     });
 
     return () => {
-      track.removeEventListener("wheel", handleWheelScroll);
+      window.removeEventListener("wheel", handleWheel);
     };
   }, [booting]);
 
   useEffect(() => {
-    const handleWindowScroll = () => {
-      const isPortrait = getIsPortrait();
+    if (booting) return;
 
-      if (!isPortrait) return;
-
-      updateActiveFromPosition();
+    const handleScroll = () => {
+      updateActive();
     };
 
-    window.addEventListener("scroll", handleWindowScroll);
-    window.addEventListener("resize", updateActiveFromPosition);
+    const handleResize = () => {
+      const track = trackRef.current;
+      if (!track) return;
+
+      if (!isPortrait()) {
+        track.scrollTo({
+          left: window.innerWidth * active,
+          behavior: "auto",
+        });
+      }
+
+      updateActive();
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("resize", handleResize);
+
+    const track = trackRef.current;
+    track?.addEventListener("scroll", handleScroll);
 
     return () => {
-      window.removeEventListener("scroll", handleWindowScroll);
-      window.removeEventListener("resize", updateActiveFromPosition);
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
+      track?.removeEventListener("scroll", handleScroll);
     };
-  }, [updateActiveFromPosition]);
+  }, [active, booting, updateActive]);
+
+  useEffect(() => {
+    if (booting) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "ArrowRight") {
+        scrollToSlide(active + 1);
+      }
+
+      if (event.key === "ArrowLeft") {
+        scrollToSlide(active - 1);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [active, booting, scrollToSlide]);
 
   return (
     <main className="app-shell">
@@ -156,11 +186,7 @@ export default function App() {
             setVisitorMode={setVisitorMode}
           />
 
-          <div
-            className="horizontal-track"
-            ref={trackRef}
-            onScroll={handleScroll}
-          >
+          <div className="horizontal-track" ref={trackRef}>
             <Section>
               <HeroSection
                 isActive={active === 0}
