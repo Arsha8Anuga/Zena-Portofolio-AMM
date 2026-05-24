@@ -18,11 +18,40 @@ export default function App() {
   const [active, setActive] = useState(0);
   const [visitorMode, setVisitorMode] = useState("recruiter");
 
+  const getIsPortrait = () => {
+    return window.matchMedia("(orientation: portrait)").matches;
+  };
+
+  const updateActiveFromPosition = useCallback(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    const isPortrait = getIsPortrait();
+
+    if (isPortrait) {
+      const sections = Array.from(track.children);
+
+      const currentIndex = sections.reduce((closestIndex, section, index) => {
+        const rect = section.getBoundingClientRect();
+        const closestRect = sections[closestIndex].getBoundingClientRect();
+
+        return Math.abs(rect.top) < Math.abs(closestRect.top)
+          ? index
+          : closestIndex;
+      }, 0);
+
+      setActive(currentIndex);
+      return;
+    }
+
+    setActive(Math.round(track.scrollLeft / window.innerWidth));
+  }, []);
+
   const scrollToSlide = useCallback((index) => {
     const track = trackRef.current;
     if (!track) return;
 
-    const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+    const isPortrait = getIsPortrait();
 
     if (isPortrait) {
       const section = track.children[index];
@@ -42,44 +71,7 @@ export default function App() {
   }, []);
 
   const handleScroll = () => {
-    const track = trackRef.current;
-    if (!track) return;
-
-    const isPortrait = window.matchMedia("(orientation: portrait)").matches;
-
-    if (isPortrait) {
-      const sections = Array.from(track.children);
-
-      const currentIndex = sections.reduce((closestIndex, section, index) => {
-        const rect = section.getBoundingClientRect();
-        const closestRect = sections[closestIndex].getBoundingClientRect();
-
-        return Math.abs(rect.top) < Math.abs(closestRect.top)
-          ? index
-          : closestIndex;
-      }, 0);
-
-      setActive(currentIndex);
-      return;
-    }
-
-    setActive(Math.round(track.scrollLeft / window.innerWidth));
-  };
-
-  const handleWheel = (event) => {
-    const isPortrait = window.matchMedia("(orientation: portrait)").matches;
-
-    if (isPortrait) return;
-
-    const track = trackRef.current;
-    if (!track) return;
-
-    event.preventDefault();
-
-    track.scrollBy({
-      left: event.deltaY,
-      behavior: "smooth",
-    });
+    updateActiveFromPosition();
   };
 
   useEffect(() => {
@@ -94,66 +86,57 @@ export default function App() {
     };
 
     window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
+
+    return () => {
+      window.removeEventListener("keydown", handleKey);
+    };
   }, [active, scrollToSlide]);
 
   useEffect(() => {
+    const track = trackRef.current;
+    if (!track || booting) return;
+
+    const handleWheelScroll = (event) => {
+      const isPortrait = getIsPortrait();
+
+      if (isPortrait) return;
+
+      event.preventDefault();
+
+      const delta =
+        Math.abs(event.deltaY) > Math.abs(event.deltaX)
+          ? event.deltaY
+          : event.deltaX;
+
+      track.scrollLeft += delta;
+    };
+
+    track.addEventListener("wheel", handleWheelScroll, {
+      passive: false,
+    });
+
+    return () => {
+      track.removeEventListener("wheel", handleWheelScroll);
+    };
+  }, [booting]);
+
+  useEffect(() => {
     const handleWindowScroll = () => {
-      const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+      const isPortrait = getIsPortrait();
 
       if (!isPortrait) return;
 
-      const track = trackRef.current;
-      if (!track) return;
-
-      const sections = Array.from(track.children);
-
-      const currentIndex = sections.reduce((closestIndex, section, index) => {
-        const rect = section.getBoundingClientRect();
-        const closestRect = sections[closestIndex].getBoundingClientRect();
-
-        return Math.abs(rect.top) < Math.abs(closestRect.top)
-          ? index
-          : closestIndex;
-      }, 0);
-
-      setActive(currentIndex);
+      updateActiveFromPosition();
     };
 
-    useEffect(() => {
-      const track = trackRef.current;
-      if (!track) return;
-
-      const handleWheelScroll = (event) => {
-        const isPortrait = window.matchMedia("(orientation: portrait)").matches;
-
-        if (isPortrait) return;
-
-        event.preventDefault();
-
-        track.scrollBy({
-          left: event.deltaY,
-          behavior: "smooth",
-        });
-      };
-
-      track.addEventListener("wheel", handleWheelScroll, {
-        passive: false,
-      });
-
-      return () => {
-        track.removeEventListener("wheel", handleWheelScroll);
-      };
-    }, []);
-
     window.addEventListener("scroll", handleWindowScroll);
-    window.addEventListener("resize", handleWindowScroll);
+    window.addEventListener("resize", updateActiveFromPosition);
 
     return () => {
       window.removeEventListener("scroll", handleWindowScroll);
-      window.removeEventListener("resize", handleWindowScroll);
+      window.removeEventListener("resize", updateActiveFromPosition);
     };
-  }, []);
+  }, [updateActiveFromPosition]);
 
   return (
     <main className="app-shell">
@@ -177,7 +160,6 @@ export default function App() {
             className="horizontal-track"
             ref={trackRef}
             onScroll={handleScroll}
-            onWheel={handleWheel}
           >
             <Section>
               <HeroSection
