@@ -74,9 +74,12 @@ export default function App() {
     const track = trackRef.current;
     if (!track) return;
 
-    if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
-      track.scrollLeft += event.deltaY;
-    }
+    event.preventDefault();
+
+    track.scrollBy({
+      left: event.deltaY,
+      behavior: "smooth",
+    });
   };
 
   useEffect(() => {
@@ -116,6 +119,32 @@ export default function App() {
 
       setActive(currentIndex);
     };
+
+    useEffect(() => {
+      const track = trackRef.current;
+      if (!track) return;
+
+      const handleWheelScroll = (event) => {
+        const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+
+        if (isPortrait) return;
+
+        event.preventDefault();
+
+        track.scrollBy({
+          left: event.deltaY,
+          behavior: "smooth",
+        });
+      };
+
+      track.addEventListener("wheel", handleWheelScroll, {
+        passive: false,
+      });
+
+      return () => {
+        track.removeEventListener("wheel", handleWheelScroll);
+      };
+    }, []);
 
     window.addEventListener("scroll", handleWindowScroll);
     window.addEventListener("resize", handleWindowScroll);

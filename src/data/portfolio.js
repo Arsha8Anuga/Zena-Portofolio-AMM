@@ -4,7 +4,7 @@ export const profile = {
   updatedAt: "2026",
   location: "Indonesia",
   email: "224443048@mhs.polman-bandung.ac.id",
-  github: "https://github.com/Anuga8Arsha",
+  github: "https://github.com/arsha8anuga",
   tagline:
     "A portfolio for embedded systems, software development, simulation, and interface design.",
   description:
