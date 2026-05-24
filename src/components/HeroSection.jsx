@@ -48,8 +48,11 @@ export function HeroSection({ isActive, onNavigate, visitorMode }) {
       >
         <div className="profile-orbit">
           <div className="profile-avatar">
-            <img src="/profile.png" alt="Profile of Zena Aiken" />
-          </div>
+            <img
+                src={`${import.meta.env.BASE_URL}profile.png`}
+                alt="Profile of Zena Aiken"
+            />
+            </div>
         </div>
 
         <div className="profile-mini-info">
